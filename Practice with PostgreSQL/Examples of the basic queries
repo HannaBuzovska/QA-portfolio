@@ -1,0 +1,196 @@
+1. Find Duplicate Rows in a PostgreSQL Table
+
+SELECT student_id, COUNT(student_id)
+FROM tbl_scores
+GROUP BY student_id
+HAVING COUNT(student_id)> 1
+ORDER BY student_id;
+
+2. Delete Duplicate Rows Query in a PostgreSQL Table
+
+DELETE FROM tbl_scores
+WHERE student_id IN
+(SELECT student_id
+FROM
+(SELECT student_id,
+ROW_NUMBER() OVER(PARTITION BY student_id
+ORDER BY student_id) AS row_num
+FROM tbl_scores) t
+WHERE t.row_num > 1);
+
+3. Create Commands to Set Up PostgreSQL Tables
+
+CREATE TABLE tbl_students(
+student_id serial PRIMARY KEY,
+full_name VARCHAR NOT NULL,
+teacher_id INT
+department VARCHAR NOT NULL,
+);
+
+CREATE TABLE tbl_teachers(
+teacher_id serial PRIMARY KEY,
+full_name VARCHAR NOT NULL,
+department_id VARCHAR NOT NULL,
+);
+
+CREATE TABLE tbl_departments(
+department_id VARCHAR NOT NULL,
+teacher_id serial PRIMARY KEY,
+department_name VARCHAR NOT NULL,
+);
+
+CREATE TABLE tbl_scores(
+student_id VARCHAR NOT NULL,
+teacher_id serial PRIMARY KEY,
+department_id VARCHAR NOT NULL,
+Score VARCHAR NOT NULL,
+);
+
+4. Insert Data into a PostgreSQL Table
+
+INSERT INTO tbl_students (
+student_id, full_name, teacher_id, department_id
+)
+VALUES
+(1, ‘Elvis Wilson', NULL, 5),
+(2, 'Cynthia Hilbert', 1, 7),
+(3, 'Chadhuri Patel', 2, 5),
+(4, 'Andre Kharlanov', 5, 9),
+(5, 'Buster Chaplin', 2, 8);
+
+5. How to Use PostgreSQL Recursive Queries
+
+WITH RECURSIVE cohort AS (
+SELECT student_id, teacher_id, full_name
+FROM tbl_students
+WHERE student_id = 2
+UNION
+SELECT e.student_id, e.teacher_id, e.full_name
+FROM tbl_students e
+INNER JOIN cohort s ON s.student_id = e.teacher_id)
+SELECT *
+FROM cohort;
+
+6. PostgreSQL FETCH Command to Limit Query Results
+
+SELECT student_id, score
+FROM tbl_scores
+ORDER BY student_id
+FETCH FIRST ROW ONLY;
+
+7. Expert Inner Join Queries in PostgreSQL
+
+SELECT tbl_students.student_id, full_name
+FROM tbl_students
+INNER JOIN tbl_scores ON score.student_id = tbl_students.student_id;
+ORDER BY tbl_students.student_id;
+
+If you want only a specific student’s scores, we can add the WHERE clause like this:
+
+WHERE
+tbl_students.student_id = 3;
+
+8. Advanced PostgreSQL Self-Join Query and Alias
+
+SELECT
+s1.full_name,
+s2.full_name,
+s1.score
+FROM
+tbl_scores s1
+INNER JOIN tbl_scores s2 ON s1.student_id <> s2.student_id
+AND s1.score = s2.score;
+
+9. Full Outer Join Query
+
+SELECT student_name, department_name
+FROM tbl_departments e
+FULL OUTER JOIN tbl_departments d ON d.department_id = e.department_id;
+
+10. Advanced Where Clause in Full Outer Join Query
+
+SELECT student_name, department_name
+FROM tbl_students e
+FULL OUTER JOIN tbl_departments d ON d.department_id = e.department_id
+WHERE
+student_name IS NULL;
+
+11. PostgreSQL Advanced Query Using the LEFT JOIN Clause
+
+SELECT
+tbl_students.full_name,
+tbl_students.student_id,
+tbl_scores.student_id,
+tbl_scores.score
+FROM
+tbl_students
+LEFT JOIN tbl_scores ON tbl_students.student_id = tbl_scores.student_id;
+
+12. Implementing the CROSS JOIN Query in PostgreSQL
+
+CREATE TABLE Labels (label CHAR(1) PRIMARY KEY);
+CREATE TABLE Scores (score INT PRIMARY KEY);
+INSERT INTO Labels (label)
+VALUES ('Fahr'), ('Cels');
+INSERT INTO Scores (score)
+VALUES (1), (2);
+SELECT * FROM Labels CROSS JOIN Scores;
+
+The output of this fundamental CROSS JOIN is Fahr 1, Fahr 2, Cels 1, Cels 2.
+
+13. Elegant NATURAL JOIN Query in PostgreSQL
+
+SELECT * FROM tbl_students NATURAL JOIN tbl_scores;
+
+14. Applying the UNION Operator to Multiple PostgreSQL Advanced Queries
+
+SELECT * FROM tbl_scores
+UNION ALL
+SELECT *
+FROM tbl_departments
+ORDER BY tbl_departments.full_name ASC,
+
+15. Use a PostgreSQL Query Result to Create a Table
+
+SELECT student_id, score
+INTO tbl_top_students
+FROM tbl_scores
+WHERE score>AVG(score);
+
+16. Implementing Math Functions in PostgreSQL Queries
+
+SELECT AVG (score) FROM tbl_scores;
+
+To generate a list of random numbers for use in a statistical sample, you can use the following code:
+
+SELECT random() * 100 + 1 AS RAND_1_100;
+
+17. Using the Advanced Subquery in PostgreSQL
+
+SELECT student_id, score
+FROM tbl_scores
+WHERE score > (
+SELECT AVG (score) FROM tbl_scores;
+);
+
+18. Querying Stats on the Postgre DB
+
+SELECT relname, relpages FROM pg_class ORDER BY relpages DESC limit 1;
+
+To understand the system-level keywords in this query, have a look at this list:
+
+relname – table name
+relpages – number of pages
+pg_class – system table names
+limit – limits output to the first result
+
+19. Using PostgreSQL SELECT DISTINCT clause
+
+SELECT DISTINCT ON
+student_id, score
+FROM tbl_scores
+WHERE score > (
+SELECT AVG (score) FROM tbl_scores;
+);
+
+You can likewise fetch the higher-than-average scores per department using the nested query from example 17 with the DISTINCT ON clause.
