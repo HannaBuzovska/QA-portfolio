@@ -1,0 +1,317 @@
+1. How to Retrieve List of All Databases in SQL Server?
+The following SQL query retrieves a list of all databases on a SQL Server:
+
+EXEC sp_helpdb
+
+2. How to Display Text of a Stored Procedure, Trigger, or View in SQL Server?
+The following SQL query gets the display text of a stored procedure, trigger, or view on SQL Server:
+
+exec sp_helptext @objname = 'Object_Name'
+
+
+3. How to List All Stored Procedures in SQL Server?
+The following SQL query gets a list of all stored procedures in a SQL Server database:
+
+SELECT DISTINCT o.name, o.xtype
+FROM syscomments c
+INNER JOIN sysobjects o ON c.id=o.id
+WHERE o.xtype='P'
+
+(To retrieve the View use “V” instead of “P” and for functions use “FN”)
+
+4. How to Get All Stored Procedures Related To a Table in SQL Server?
+The following SQL query gets all stored procedures related to a database table in SQL Server:
+
+SELECT DISTINCT o.name, o.xtype
+FROM syscomments c
+INNER JOIN sysobjects o ON c.id=o.id
+WHERE c.TEXT LIKE '%Table_Name%' AND o.xtype='P'
+
+(To retrieve the View use “V” instead of “P” and for functions use “FN”)
+
+5. How to Rebuild All Indexes of a SQL Server Database?
+The following SQL query rebuilds all indexes of a SQL Server database: 
+
+EXEC sp_MSforeachtable @command1="print '?' DBCC DBREINDEX ('?', ' ', 80)"
+GO
+EXEC sp_updatestats
+GO
+
+6. How to Retrieve All dependencies of Stored Procedures in SQL Server?
+This query returns all object names that are being using in stored procedurs like tables, user define functions, another stored procedures and so on:
+
+;WITH stored_procedures AS (
+SELECT
+oo.name AS table_name,
+ROW_NUMBER() OVER(partition by o.name,oo.name ORDER BY o.name,oo.name) AS row
+FROM sysdepends d
+INNER JOIN sysobjects o ON o.id=d.id
+INNER JOIN sysobjects oo ON oo.id=d.depid
+WHERE o.xtype = 'P' AND o.name LIKE '%SP_NAme%' )
+SELECT Table_name FROM stored_procedures
+WHERE row = 1
+
+
+7. How to Find Size of a Database Table in SQL Server?
+The following SQL query gets the size of a database table of a SQL Server database:
+
+SELECT sob.name AS Table_Name,
+SUM(sys.length) AS [Size_Table(Bytes)]
+FROM sysobjects sob, syscolumns sys
+WHERE sob.xtype='u' AND sys.id=sob.id
+GROUP BY sob.name
+
+8. How to get all tables that don’t have identity columns in SQL Server?
+The following SQL query gets all tables of a SQL Server database that don't have identity columns. 
+
+SELECT
+TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
+where
+Table_NAME NOT IN
+(
+SELECT DISTINCT c.TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS c
+INNER
+JOIN sys.identity_columns ic
+on
+(c.COLUMN_NAME=ic.NAME))
+AND
+TABLE_TYPE ='BASE TABLE'
+
+9. How to List Primary Keys and Foreign Keys in a SQL Server Database?
+The following SQL query gets a list of all primary keys and foreign keys on a SQL Server database. 
+
+SELECT
+DISTINCT
+Constraint_Name AS [Constraint],
+Table_Schema AS [Schema],
+Table_Name AS [TableName] FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+GO
+
+10. List of Primary Key and Foreign Key for a particular table
+
+SELECT
+DISTINCT
+Constraint_Name AS [Constraint],
+Table_Schema AS [Schema],
+Table_Name AS [TableName] FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+WHERE INFORMATION_SCHEMA.KEY_COLUMN_USAGE.TABLE_NAME='Table_Name'
+GO
+
+11. RESEED Identity of all tables
+
+EXEC sp_MSForEachTable '
+IF OBJECTPROPERTY(object_id(''?''), ''TableHasIdentity'') = 1
+DBCC CHECKIDENT (''?'', RESEED, 0)
+
+12. List of tables with number of records
+
+CREATE TABLE #Tab
+(
+Table_Name [varchar](max),
+Total_Records int
+);
+EXEC sp_MSForEachTable @command1=' Insert Into #Tab(Table_Name, Total_Records) SELECT ''?'', COUNT(*) FROM ?'
+SELECT * FROM #Tab t ORDER BY t.Total_Records DESC;
+DROP TABLE #Tab;
+
+13. Get the version name of SQL Server
+
+SELECT @@VERSION AS Version_Name
+
+14. Get Current Language of SQL Server
+
+SELECT @@LANGUAGE AS Current_Language;
+
+15. Disable all constraints of a table
+
+ALTER TABLE Table_Name NOCHECK CONSTRAINT ALL
+
+16. Disable all constraints of all tables
+
+EXEC sp_MSForEachTable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL'
+
+17. Get Current Language Id
+
+SELECT @@LANGID AS 'Language ID'
+
+18. Get precision level used by decimal and numeric as current set in Server
+
+SELECT @@MAX_PRECISION AS 'MAX_PRECISION'
+
+19. Return Server Name of SQL Server
+
+SELECT @@SERVERNAME AS 'Server_Name'
+
+20: Get name of register key under which SQL Server is running
+
+SELECT @@SERVICENAME AS 'Service_Name'
+
+21: Get Session Id of current user process
+
+SELECT @@SPID AS 'Session_Id'
+
+
+22: Get Current Value of TEXTSIZE option
+
+SELECT @@TEXTSIZE AS 'Text_Size'
+
+23: Retrieve Free Space of Hard Disk
+
+EXEC master..xp_fixeddrives
+
+24: Disable a Particular Trigger
+
+Syntax
+
+ALTER TABLE Table_Name DISABLE TRIGGER Trigger_Name
+
+25: Enable a Particular Trigger
+
+ALTER TABLE Table_Name ENABLE TRIGGER Trigger_Name
+
+26: Disable All Trigger of a table
+We can disable and enable all triggers of a table using previous query, but replacing the "ALL" instead of trigger name.
+
+ALTER TABLE Table_Name DISABLE TRIGGER ALL
+
+27: Enable All Trigger of a table
+
+ALTER TABLE Table_Name ENABLE TRIGGER ALL
+
+28: Disable All Trigger for database
+Using sp_msforeachtable system stored procedure we enable and disable all triggers for a database.
+
+Use Database_Name
+Exec sp_msforeachtable "ALTER TABLE ? DISABLE TRIGGER all"
+
+29: Enable All Trigger for database
+
+Use Demo
+Exec sp_msforeachtable "ALTER TABLE ? ENABLE TRIGGER all"
+
+30: List of Stored procedure modified in last N days
+
+SELECT name,modify_date
+FROM sys.objects
+WHERE type='P'
+AND DATEDIFF(D,modify_date,GETDATE())< N
+
+31: List of Stored procedure created in last N days
+
+SELECT name,sys.objects.create_date
+FROM sys.objects
+WHERE type='P'
+AND DATEDIFF(D,sys.objects.create_date,GETDATE())< N
+
+32: Recompile a stored procedure
+
+EXEC sp_recompile'Procedure_Name';
+GO
+
+33: Recompile all stored procedure on a table
+
+EXEC sp_recompile N'Table_Name';
+GO
+
+34: Get all columns of a specific data type
+
+SELECT OBJECT_NAME(c.OBJECT_ID) as Table_Name, c.name as Column_Name
+FROM sys.columns AS c
+JOIN sys.types AS t ON c.user_type_id=t.user_type_id
+WHERE t.name = 'Data_Type'
+
+35: Get all Nullable columns of a table
+
+SELECT OBJECT_NAME(c.OBJECT_ID) as Table_Name, c.name as Column_Name
+FROM sys.columns AS c
+JOIN sys.types AS t ON c.user_type_id=t.user_type_id
+WHERE c.is_nullable=0 AND OBJECT_NAME(c.OBJECT_ID)='Table_Name'
+
+36: Get All table that don’t have primary key
+
+SELECT name AS Table_Name
+FROM sys.tables
+WHERE OBJECTPROPERTY(OBJECT_ID,'TableHasPrimaryKey') = 0
+ORDER BY Table_Name;
+
+37: Get All table that don’t have foreign key
+
+SELECT name AS Table_Name
+FROM sys.tables
+WHERE OBJECTPROPERTY(OBJECT_ID,'TableHasForeignKey') = 0
+ORDER BY Table_Name;
+
+38: Get All table that don’t have identity column
+
+SELECT name AS Table_Name
+FROM sys.tables
+WHERE OBJECTPROPERTY(OBJECT_ID,'TableHasIdentity') = 0
+ORDER BY Table_Name;
+
+39: Get First Date of Current Month
+
+SELECT CONVERT(VARCHAR(25),DATEADD(DAY,-(DAY(GETDATE()))+1,GETDATE()),105) First_Date_Current_Month;
+
+40: Get last date of previous month
+
+SELECT CONVERT(VARCHAR(25),DATEADD(DAY,-(DAY(GETDATE())),GETDATE()),105) Last_Date_Previous_Month;
+
+41: Get last date of current month
+
+SELECT CONVERT(VARCHAR(25),DATEADD(DAY,-(DAY(GETDATE())), DATEADD(MONTH,1,GETDATE())),105) Last_Date_Current_Month;
+
+42: Get first date of next month
+
+SELECT CONVERT(VARCHAR(25),DATEADD(DAY,-(DAY(GETDATE())), DATEADD(MONTH,1,GETDATE())+1),105) First_Date_Next_Month;
+
+43: Swap the values of two columns
+
+UPDATE Table_Name SET Column1=Column2, Column2=Column1
+
+44: Remove all stored procedure from database
+
+Declare @Drop_SP Nvarchar(MAX)
+Declare My_Cursor Cursor For Select [name] From sys.objects where type = 'p'
+Open My_Cursor
+Fetch Next From My_Cursor Into @Drop_SP
+While @@FETCH_STATUS= 0
+Begin
+Exec('DROP PROCEDURE ' + @Drop_SP)
+Fetch Next From My_Cursor Into @Drop_SP
+End
+Close My_Cursor
+Deallocate My_Cursor
+
+45: Remove all views from database
+
+Declare @Drop_View Nvarchar(MAX)
+Declare My_Cursor Cursor For Select [name] From sys.objects where type = 'v'
+Open My_Cursor
+Fetch Next From My_Cursor Into @Drop_View
+While @@FETCH_STATUS = 0
+Begin
+Exec('DROP VIEW ' + @Drop_View)
+Fetch Next From My_Cursor Into @Drop_View
+End
+Close My_Cursor
+Deallocate My_Cursor
+
+46: Drop all tables
+
+EXEC sys.sp_MSforeachtable @command1 = 'Drop Table ?'
+
+
+47: Get information of tables’ columns
+
+SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+WHERE INFORMATION_SCHEMA.COLUMNS.TABLE_NAME=’Table_Name’
+
+48: Get all columns contain any constraints
+
+SELECT TABLE_NAME,COLUMN_NAME,CONSTRAINT_NAME FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE
+
+49: Get all tables that contain a view
+SELECT * FROM INFORMATION_SCHEMA.VIEW_TABLE_USAGE
+
+50: Get all columns of table that using in views
+SELECT * FROM INFORMATION_SCHEMA.VIEW_COLUMN_USAGE
